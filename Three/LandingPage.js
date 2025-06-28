@@ -6,7 +6,6 @@ import { Canvas, useFrame, extend, useThree } from "@react-three/fiber";
 import {
   Center,
   Environment,
-  OrbitControls,
   PerspectiveCamera,
   useGLTF,
   ContactShadows,
@@ -52,7 +51,7 @@ function Effects() {
   return null;
 }
 
-function HouseModel({ position = [0, 0, 0], scale = 0.1, castShadow = false }) {
+function HouseModel({ position = [-2, 0, 1], scale = 0.2 }) {
   const { scene } = useGLTF("/models/familyhouse1.glb");
   const houseRef = useRef();
 
@@ -60,8 +59,8 @@ function HouseModel({ position = [0, 0, 0], scale = 0.1, castShadow = false }) {
   useEffect(() => {
     scene.traverse((child) => {
       if (child.isMesh) {
-        child.castShadow = true;
         child.receiveShadow = true;
+        child.castShadow = true;
         child.material = new THREE.MeshStandardMaterial({
           color: 0x808080,
           roughness: 0.7,
@@ -78,7 +77,7 @@ function HouseModel({ position = [0, 0, 0], scale = 0.1, castShadow = false }) {
       ref={houseRef}
       scale={scale}
       position={position}
-      castShadow={castShadow}
+      castShadow
     />
   );
 }
@@ -262,13 +261,14 @@ export default function LandingPage() {
             cameraRef.current.position.y = 3;
             cameraRef.current.rotation.set(0, 0, 0);
           } else if (self.progress < 0.8) {
-            const topViewProgress = (self.progress - 0.6) / 0.2;
+            const topViewProgress = (self.progress - 0.4) / 0.2;
             cameraRef.current.position.y = 3 + (17 * topViewProgress);
             cameraRef.current.rotation.x = -(Math.PI / 2) * topViewProgress;
             cameraRef.current.rotation.y = Math.PI * 2 * topViewProgress;
             cameraRef.current.position.x = 0;
             cameraRef.current.position.z = 0;
-          } else {
+          }
+          else {
             const returnProgress = (self.progress - 0.8) / 0.2;
             cameraRef.current.position.y = 20 - (17 * returnProgress);
             cameraRef.current.rotation.x = -(Math.PI / 2) * (1 - returnProgress);
@@ -483,6 +483,206 @@ export default function LandingPage() {
     }
   }, [loading]);
 
+  const servicesSectionRef = useRef(null);
+
+  useEffect(() => {
+    if (!servicesSectionRef.current || !cameraRef.current) return;
+    // Animate camera to top view when 'Our Services' section is about to enter
+    const st = ScrollTrigger.create({
+      trigger: servicesSectionRef.current,
+      start: 'top 80%', // adjust as needed
+      onEnter: () => {
+        gsap.to(cameraRef.current.position, {
+          x: 0,
+          y: 16, // only one y value for full model visibility
+          z: 0.01,
+          duration: 1.2,
+          onUpdate: () => {
+            cameraRef.current.lookAt(0, 0, 0);
+          },
+        });
+      },
+      // Optionally, return to previous view onLeaveBack
+      onLeaveBack: () => {
+        gsap.to(cameraRef.current.position, {
+          x: 0,
+          y: 3,
+          z: 16,
+          duration: 1.2,
+          onUpdate: () => {
+            cameraRef.current.lookAt(0, 0, 0);
+            cameraRef.current.rotation.set(0, 0, 0);
+          },
+        });
+        gsap.to(cameraRef.current.rotation, {
+          x: 0,
+          y: 0,
+          z: 0,
+          duration: 1.2,
+        });
+      },
+    });
+    return () => st && st.kill();
+  }, [servicesSectionRef, cameraRef]);
+
+  // 1. Add refs for vertical scroll section blocks and headings
+  const verticalSectionRef = useRef(null);
+  const verticalImgRefs = useRef([]);
+  const verticalContentRefs = useRef([]);
+  const verticalHeadingRefs = useRef([]);
+  // Add ref for first paragraph in each content block
+  const verticalParagraphRefs = useRef([]);
+
+  const addVerticalImgRef = (el) => {
+    if (el && !verticalImgRefs.current.includes(el)) {
+      verticalImgRefs.current.push(el);
+    }
+  };
+  const addVerticalContentRef = (el) => {
+    if (el && !verticalContentRefs.current.includes(el)) {
+      verticalContentRefs.current.push(el);
+    }
+  };
+  const addVerticalHeadingRef = (el) => {
+    if (el && !verticalHeadingRefs.current.includes(el)) {
+      verticalHeadingRefs.current.push(el);
+    }
+  };
+  const addVerticalParagraphRef = (el) => {
+    if (el && !verticalParagraphRefs.current.includes(el)) {
+      verticalParagraphRefs.current.push(el);
+    }
+  };
+
+  // GSAP animation for vertical scroll section (images, content, headings)
+  useEffect(() => {
+    if (!verticalSectionRef.current) return;
+    // Animate images
+    verticalImgRefs.current.forEach((img, i) => {
+      gsap.from(img, {
+        scrollTrigger: {
+          trigger: img,
+          start: 'top 85%',
+          toggleActions: 'play none none reverse',
+        },
+        opacity: 0,
+        y: 60,
+        duration: 1,
+        ease: 'power3.out',
+        delay: i * 0.1,
+      });
+    });
+    // Animate content blocks
+    verticalContentRefs.current.forEach((block, i) => {
+      gsap.from(block, {
+        scrollTrigger: {
+          trigger: block,
+          start: 'top 90%',
+          toggleActions: 'play none none reverse',
+        },
+        opacity: 0,
+        y: 60,
+        duration: 1,
+        ease: 'power3.out',
+        delay: i * 0.15,
+      });
+    });
+    // Animate headings
+    verticalHeadingRefs.current.forEach((heading, i) => {
+      gsap.fromTo(
+        heading,
+        { scale: 0.92, color: '#222', opacity: 0 },
+        {
+          scrollTrigger: {
+            trigger: heading,
+            start: 'top 95%',
+            toggleActions: 'play none none reverse',
+          },
+          scale: 1,
+          color: '#1a56db', // blue accent
+          opacity: 1,
+          duration: 1.1,
+          ease: 'power4.out',
+          delay: i * 0.1,
+        }
+      );
+    });
+    return () => {
+      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+    };
+  }, []);
+
+  // GSAP text and image animation for vertical scroll section (headings split by word, first paragraph, images)
+  useEffect(() => {
+    // Animate headings: split by word, stagger in
+    verticalHeadingRefs.current.forEach((heading) => {
+      const words = heading.textContent.split(' ').map((word, i, arr) => {
+        const span = document.createElement('span');
+        span.textContent = word + (i < arr.length - 1 ? ' ' : '');
+        span.style.display = 'inline-block';
+        span.style.opacity = 0;
+        span.style.transform = 'translateY(30px)';
+        return span;
+      });
+      heading.innerHTML = '';
+      words.forEach((span) => heading.appendChild(span));
+      gsap.to(words, {
+        scrollTrigger: {
+          trigger: heading,
+          start: 'top 90%',
+          toggleActions: 'play none none reverse',
+        },
+        opacity: 1,
+        y: 0,
+        duration: 0.7,
+        stagger: 0.08,
+        ease: 'power3.out',
+      });
+    });
+
+    // Animate first paragraph in each block
+    verticalParagraphRefs.current.forEach((p) => {
+      gsap.fromTo(
+        p,
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 1,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: p,
+            start: 'top 90%',
+            toggleActions: 'play none none reverse',
+          },
+        }
+      );
+    });
+
+    // Animate images
+    verticalImgRefs.current.forEach((img) => {
+      gsap.fromTo(
+        img,
+        { opacity: 0, scale: 0.92 },
+        {
+          opacity: 1,
+          scale: 1,
+          duration: 1.1,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: img,
+            start: 'top 90%',
+            toggleActions: 'play none none reverse',
+          },
+        }
+      );
+    });
+
+    return () => {
+      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+    };
+  }, []);
+
   return (
     <>
       {loading && (
@@ -569,31 +769,32 @@ export default function LandingPage() {
           <span className="text-white text-xl mr-4">Contact Us</span>
           <span className="bg-gray-200 rounded w-10 h-10 flex items-center justify-center">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M7 17L17 7M7 7h10v10" stroke="#111" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M7 17L17 7M7 7h10v10" stroke="#111" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </span>
         </a>
         {/* Full screen 3D model container */}
         <div className="fixed inset-0 w-full h-full">
           <Canvas shadows>
+            <color attach="background" args={["#bdbdbd"]} />
             <PerspectiveCamera
               ref={cameraRef}
               makeDefault
-              position={[0, 0, 16]}
-              fov={50}
-              rotation={[-Math.PI / 2, 0, 0]}
+              position={[0, 3, 22]}
+              fov={45}
+              rotation={[0, 0, 0]}
             />
             <ambientLight intensity={1.2} />
             <directionalLight
               position={[5, 10, 5]}
               intensity={4.5}
-              castShadow
               shadow-mapSize-width={2048}
               shadow-mapSize-height={2048}
               shadow-bias={-0.0001}
+              castShadow
             />
             <pointLight position={[-5, 5, -5]} intensity={0.5} />
-            <HouseModel position={[0, 0, -2]} scale={0.3} castShadow />
+            <HouseModel position={[-2, 0, 1]} scale={0.2} />
             {/* Shadow catcher plane */}
             <mesh
               rotation={[-Math.PI / 2, 0, 0]}
@@ -616,9 +817,8 @@ export default function LandingPage() {
               blur={2.5}
               far={20}
             />
-            <Environment preset="night" background blur={1} />
-            <Environment preset="sunset" background blur={1} />
-            <OrbitControls />
+            <Environment preset="sunset" background={false} blur={0.2} />
+
             <Effects />
           </Canvas>
         </div>
@@ -628,7 +828,7 @@ export default function LandingPage() {
           <div className="w-full h-screen p-12 mt-26 md:p-12">
             <div className="firstSection max-w-2xl p-5">
               <h1 ref={h1Ref} className="text-4xl  md:text-6xl font-bold mb-8">
-              Elegant Living Begins with Thoughtful Planning
+                Elegant Living Begins with Thoughtful Planning
               </h1>
               <p className="text-xl md:text-2xl mb-8 text-gray-300" ref={exploreTextRef}>
                 Explore our innovative designs
@@ -638,28 +838,13 @@ export default function LandingPage() {
           <div className="secondSection w-full md:w-1/2 h-screen p-8 md:p-12 self-end">
             <div className="max-w-2xl p-3 -mt-20">
               <h1 className="text-4xl md:text-6xl font-bold mb-6">About</h1>
-                <p className="text-xl md:text-2xl mb-8 text-white" ref={aboutTextRef}>
+              <p className="text-xl md:text-2xl mb-8 text-white" ref={aboutTextRef}>
                 Online House Planners, we believe that every dream home begins with a smart, creative, and practical plan. As a leading online architectural design and planning platform, we specialize in providing customized house planning services that are accessible, affordable, and tailored to your unique lifestyle.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="min-h-screen bg-white font-sans flex flex-col md:flex-row items-center justify-center">
-          <div className="flex flex-col justify-center p-10 md:w-1/2 space-y-6">
-          <h1 className="text-5xl font-bold text-black">Why Choose Us?</h1>
-            <p className="text-xl text-white font-medium" ref={keyFeaturesTextRef}>            
-            Get your initial plans and revisions delivered quickly, without compromising on quality.
-            We combine cutting-edge technology with years of industry expertise to deliver detailed 2D plans, 3D visualizations, structural drawings, interior concepts, and vastu-compliant designs—all online, without the need for physical visits.            </p>
-          </div>
-          <div className="relative md:w-1/2 h-96 md:h-auto flex items-center justify-center">
-            <img
-              src="https://files.staging.peachworlds.com/website/905fcf55-150d-44ab-b5e8-96de39798da3/chatgpt-image-3-apr-2025-16-23-39.webp"
-              alt="Interior Design"
-              className="object-cover w-full h-full rounded-lg shadow-lg"
-            />
-          </div>
-        </div>
 
         {/* Scrolling content section */}
         <main className="main-wrapper">
@@ -668,7 +853,7 @@ export default function LandingPage() {
             <div className="container-medium">
               <div className="padding-vertical">
                 <div className="max-width-large text-center">
-                  <h1 className="heading text-6xl md:text-6xl font-bold" ref={addToRefs}>Interior & Exteriors Plans</h1>
+                  <h1 className="heading text-6xl md:text-6xl font-bold" ref={addToRefs}>Our Plans</h1>
                 </div>
               </div>
             </div>
@@ -676,85 +861,219 @@ export default function LandingPage() {
 
           {/* Vertical Scroll Section */}
           <div
-            ref={(el) => (sectionRefs.current[0] = el)}
-            className="scroll-section vertical-section section"
+            ref={verticalSectionRef}
+            className="min-h-screen w-full bg-gray-300 py-20 px-6 sm:px-8 lg:px-12 vertical-scroll-section"
+            style={{ position: 'relative', zIndex: 20 }}
           >
-            <div className="wrapper">
-              <div role="list" className="list">
-                {[
-                  {
-                    number: 1,
-                    title: "Where style meets space—interiors designed to reflect your life",
-                    description: "Where style meets space—interiors designed to reflect your life",
-                    image: "/images/interior.webp",
-                  },
-                  {
-                    number: 2,
-                    title: "Elevate your home's first impression with elegant, custom exterior designs",
-                    description: "Elevate your home's first impression with elegant, custom exterior designs",
-                    image: "/images/exterior.jpg",
-                  }
-                ].map(({ number, title, description, image }, index) => (
-                  <div role="listitem" className="item" key={index}>
-                    <div className="relative w-full h-full">
-                      <div className="absolute top-0 left-0 w-full p-6 z-10">
-                        <h3 className="text-3xl font-bold text-white text-center">
-                          {title}
-                        </h3>
-                      </div>
-                      <Image
-                        src={image}
-                        alt={title}
-                        fill
-                        className="item_media"
-                        style={{ objectFit: "cover" }}
-                      />
-                    </div>
-                  </div>
-                ))}
+            {/* Section 1 - Image left, content right */}
+            <div className="max-w-7xl mx-auto mb-16">
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                <div
+                  className="w-full md:w-1/2 h-96 bg-gray-300 rounded-xl overflow-hidden vertical-img-block"
+                  ref={addVerticalImgRef}
+                >
+                  <img
+                    src="https://img.freepik.com/premium-vector/aic2a86ec61a9a40978b710e2cd62ddbe8_600238-5890.jpg"
+                    alt="Scandinavian interior"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="w-full md:w-1/2 vertical-content-block" ref={addVerticalContentRef}>
+                  <h2
+                    className="text-3xl font-bold text-gray-900 mb-4 vertical-heading"
+                    style={{
+                      fontFamily: 'Poppins, Arial, sans-serif',
+                      wordSpacing: '1em',
+                      textShadow: '0 2px 8px rgba(26,86,219,0.08)'
+                    }}
+                    ref={addVerticalHeadingRef}
+                  >
+                    House Vastu Plans
+                  </h2>
+                  <p
+                    className="text-gray-700 mb-6 leading-relaxed font-bold"
+                    style={{ fontFamily: 'Poppins, Arial, sans-serif' }}
+                    ref={addVerticalParagraphRef}
+                  >
+                    Scandinavian-inspired interiors with floor-to-ceiling glass and natural textures.
+                    Clean lines, functional furniture, and a connection to nature define this aesthetic.
+                  </p>
+                  <div className="border-t border-gray-400 my-6"></div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4" style={{ fontFamily: 'Poppins, Arial, sans-serif' }}>Design Philosophy</h3>
+                  <p className="text-gray-700 leading-relaxed font-bold" style={{ fontFamily: 'Poppins, Arial, sans-serif' }}>
+                    We believe in creating spaces that are both beautiful and functional, with an emphasis on natural light and organic materials.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-        </main>
-
-        <section className="lastsection h-screen relative w-full py-20" style={{ position: 'relative', zIndex: 50 }}>
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto space-y-16">
-              <div className="content-block">
-                <h2 className="text-4xl font-bold mb-6 text-white">Transform Your Space</h2>
-                <p className="text-xl text-white">
-                  Experience the perfect blend of innovation and comfort with our cutting-edge house planning solutions.
-                  We bring your dream home to life with precision and style.
-                </p>
-              </div>
-              <div className="content-block">
-                <h2 className="text-4xl font-bold mb-6 text-white">Smart Design Solutions</h2>
-                <p className="text-xl text-white">
-                  Our expert team combines functionality with aesthetics to create spaces that inspire and delight.
-                  Every detail is carefully considered to enhance your living experience.
-                </p>
+            {/* Section 2 - Image right, content left */}
+            <div className="max-w-7xl mx-auto mb-16">
+              <div className="flex flex-col md:flex-row-reverse items-center gap-8">
+                <div
+                  className="w-full md:w-1/2 h-96 bg-gray-300 rounded-xl overflow-hidden vertical-img-block"
+                  ref={addVerticalImgRef}
+                >
+                  <img
+                    src="https://img.freepik.com/premium-photo/3d-model-house-architectural-template-background-architectural-model-house_727625-197.jpg"
+                    alt="Minimalist design"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="w-full md:w-1/2 vertical-content-block" ref={addVerticalContentRef}>
+                  <h2
+                    className="text-3xl font-bold text-gray-900 mb-4 vertical-heading"
+                    style={{ fontFamily: 'Poppins, Arial, sans-serif', letterSpacing: '0.02em', textShadow: '0 2px 8px rgba(26,86,219,0.08)' }}
+                    ref={addVerticalHeadingRef}
+                  >
+                    Exterior Plan
+                  </h2>
+                  <p
+                    className="text-gray-700 mb-6 leading-relaxed font-bold"
+                    style={{ fontFamily: 'Poppins, Arial, sans-serif' }}
+                    ref={addVerticalParagraphRef}
+                  >
+                    Our designs embrace minimalism with purpose. Each element serves a function while
+                    maintaining aesthetic harmony. Less clutter means more space for living.
+                  </p>
+                  <div className="border-t border-gray-400 my-6"></div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4" style={{ fontFamily: 'Poppins, Arial, sans-serif' }}>Space Optimization</h3>
+                  <p className="text-gray-700 leading-relaxed font-bold" style={{ fontFamily: 'Poppins, Arial, sans-serif' }}>
+                    Every square meter is carefully considered to maximize both utility and visual appeal, creating airy, uncluttered environments.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
 
-        <div className="section">
-            <div className="container-medium">
-              <div className="padding-vertical">
-                <div className="max-width-large text-center">
-                  <h1 className="heading text-6xl md:text-8xl font-bold" ref={addToRefs}>Our Services</h1>
+            {/* Section 3 - Image left, content right */}
+            <div className="max-w-7xl mx-auto mb-16">
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                <div
+                  className="w-full md:w-1/2 h-96 bg-gray-300 rounded-xl overflow-hidden vertical-img-block"
+                  ref={addVerticalImgRef}
+                >
+                  <img
+                    src="https://img.freepik.com/free-photo/3d-modern-interior-sketch-style-design_1048-18878.jpg"
+                    alt="Modern interior design"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="w-full md:w-1/2 vertical-content-block" ref={addVerticalContentRef}>
+                  <h2
+                    className="text-3xl font-bold text-gray-900 mb-4 vertical-heading"
+                    style={{ fontFamily: 'Poppins, Arial, sans-serif', letterSpacing: '0.02em', textShadow: '0 2px 8px rgba(26,86,219,0.08)' }}
+                    ref={addVerticalHeadingRef}
+                  >
+                    Interior Plan
+                  </h2>
+                  <p
+                    className="text-gray-700 mb-6 leading-relaxed font-bold"
+                    style={{ fontFamily: 'Poppins, Arial, sans-serif' }}
+                    ref={addVerticalParagraphRef}
+                  >
+                    We prioritize sustainable, natural materials like wood, stone, and linen.
+                    These elements bring warmth and texture while remaining environmentally conscious.
+                  </p>
+                  <div className="border-t border-gray-400 my-6"></div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4" style={{ fontFamily: 'Poppins, Arial, sans-serif' }}>Sustainability</h3>
+                  <p className="text-gray-700 leading-relaxed font-bold" style={{ fontFamily: 'Poppins, Arial, sans-serif' }}>
+                    All materials are sourced responsibly, with low environmental impact and high durability to ensure longevity.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 4 - Image right, content left */}
+            <div className="max-w-9xl mx-auto">
+              <div className="flex flex-col md:flex-row-reverse items-center gap-8">
+                <div
+                  className="w-full md:w-1/2 h-96 bg-gray-300 rounded-xl overflow-hidden vertical-img-block"
+                  ref={addVerticalImgRef}
+                >
+                  <img
+                    src="https://img.freepik.com/premium-vector/floor-plan_600238-5612.jpg"
+                    alt="Wardrobe floor plan"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="w-full md:w-1/2 vertical-content-block" ref={addVerticalContentRef}>
+                  <h2
+                    className="text-3xl font-bold text-gray-900 mb-4 vertical-heading"
+                    style={{ fontFamily: 'Poppins, Arial, sans-serif', letterSpacing: '0.02em', textShadow: '0 2px 8px rgba(26,86,219,0.08)' }}
+                    ref={addVerticalHeadingRef}
+                  >
+                    Wardrobe Plan
+                  </h2>
+                  <p
+                    className="text-gray-700 mb-6 leading-relaxed font-bold"
+                    style={{ fontFamily: 'Poppins, Arial, sans-serif' }}
+                    ref={addVerticalParagraphRef}
+                  >
+                    Custom-designed wardrobes that maximize storage while maintaining aesthetic appeal.
+                    We use space-efficient solutions tailored to your specific needs.
+                  </p>
+                  <div className="border-t border-gray-400 my-6"></div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-8" style={{ fontFamily: 'Poppins, Arial, sans-serif' }}>Customization</h3>
+                  <p className="text-gray-700 leading-relaxed font-bold" style={{ fontFamily: 'Poppins, Arial, sans-serif' }}>
+                    Each wardrobe is designed around your storage requirements and personal style, with attention to both form and function.
+                  </p>
                 </div>
               </div>
             </div>
           </div>
+        </main>
+
+        <section className="lastsection h-screen relative w-full py-20 mt-20" style={{ position: 'relative', zIndex: 50 }}>
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto space-y-18">
+              <div className="content-block">
+                <h2 className="text-4xl font-bold mb-6 text-white">Why Choose Us?</h2>
+                <p className="text-xl text-white" textWrap="wrap" style={{ width: '500px' }} ref={keyFeaturesTextRef}>
+                  Get your initial plans and revisions delivered quickly, without compromising on quality.
+                  We combine cutting-edge technology with years of industry expertise to deliver detailed 2D plans, 3D visualizations, structural drawings, interior concepts, and vastu-compliant designs—all online, without the need for physical visits.
+                </p>
+              </div>
+              <div className="content-block">
+                <h2 className="text-4xl font-bold mb-6 text-white">Transform Your Space</h2>
+                <p className="text-xl text-white" ref={keyFeaturesTextRef} textWrap="wrap" style={{ width: '500px' }}>
+                  Experience the perfect blend of innovation and comfort with our cutting-edge house planning solutions.
+                  We bring your dream home to life with precision and style.
+                </p>
+              </div>
+
+
+
+            </div>
+          </div>
+
+        </section>
+
+
+        <section className="lastsection h-screen relative w-full py-20 mt-20" style={{ position: 'relative', zIndex: 50 }}>
+          <div className="container mx-auto px-4">
+
+          </div>
+        </section>
+
+
+
+        <div className="section">
+
+          <div className="container-medium">
+            <div className="padding-vertical">
+              <div className="max-width-large text-center" ref={servicesSectionRef}>
+                <h1 className="heading text-6xl md:text-8xl font-bold" ref={addToRefs}>Our Services</h1>
+              </div>
+            </div>
+          </div>
+        </div>
         {/* Horizontal Scroll Section */}
         <div
           ref={gridSectionRef}
           className="scroll-section horizontal-section section"
         >
           <div className="wrapper">
-            <div className="min-s-screen bg-white font-sans">
+            <div className="min-s-screen bg-gray-300 font-sans">
               <div className="max-w-5xl mx-auto px-4 sm:px-2 lg:px-8 py-12">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
 
@@ -766,7 +1085,7 @@ export default function LandingPage() {
                         className="w-full h-64 object-cover transform group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
-                    <p className="mt-6 text-gray-800 text-lg leading-relaxed" ref={addGridTextRef}>
+                    <p className="mt-6 text-gray-800 text-lg leading-relaxed font-bold" ref={addGridTextRef}>
                       Wake up to nature in the Mini Villa's panoramic bedroom. Framed by floor-to-ceiling glass.
                     </p>
                   </div>
@@ -779,7 +1098,7 @@ export default function LandingPage() {
                         className="w-full h-64 object-cover transform group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
-                    <p className="mt-6 text-gray-800 text-lg leading-relaxed" ref={addGridTextRef}>
+                    <p className="mt-6 text-gray-800 text-lg leading-relaxed font-bold" ref={addGridTextRef}>
                       A spa-like retreat in miniature form—crafted with warm wood tones, and matte black fixtures.
                     </p>
                   </div>
@@ -792,7 +1111,7 @@ export default function LandingPage() {
                         className="w-full h-64 object-cover transform group-hover:scale-105 transition-transform duration-300"
                       />
                     </div>
-                    <p className="mt-6 text-gray-800 text-lg leading-relaxed" ref={addGridTextRef}>
+                    <p className="mt-6 text-gray-800 text-lg leading-relaxed font-bold" ref={addGridTextRef}>
                       The kitchen combines sleek design with smart functionality—compact and fully equipped.
                     </p>
                   </div>

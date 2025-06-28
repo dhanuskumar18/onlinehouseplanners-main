@@ -120,7 +120,7 @@ const Footer = () => {
                             <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-white animate-shimmer bg-[length:200%_100%]">
                                 Online House Planners
                             </h2>
-                            <p className="text-gray-300 mt-3">Visualize your perfect living space</p>
+                            <p className="text-white-300 mt-3">Visualize your perfect living space</p>
                         </div>
                     </div>
 
@@ -137,7 +137,7 @@ const Footer = () => {
                                 <li key={index}>
                                     <a
                                         href="#"
-                                        className="text-gray-300 hover:text-white transition-colors duration-300 hover:pl-2 block"
+                                        className="text-white-300 hover:text-white transition-colors duration-300 hover:pl-2 block"
                                         ref={el => addToLinksRef(el)}
                                     >
                                         {item}
@@ -160,7 +160,7 @@ const Footer = () => {
                                 <li key={index}>
                                     <a
                                         href="#"
-                                        className="text-gray-300 hover:text-white transition-colors duration-300 hover:pl-2 block"
+                                        className="text-white-300 hover:text-white transition-colors duration-300 hover:pl-2 block"
                                         ref={el => addToLinksRef(el)}
                                     >
                                         {item}
@@ -179,7 +179,7 @@ const Footer = () => {
                             Connect With Us
                         </h3>
                         <div className="space-y-4">
-                            <p className="text-gray-300" ref={el => addToLinksRef(el)}>
+                            <p className="text-white-300" ref={el => addToLinksRef(el)}>
                                 Need help with your project? Our design experts are ready to assist.
                             </p>
 
